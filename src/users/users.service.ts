@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { UserValidate } from './user.validation';
-import { validation } from '../validation/validation';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
+import { hash } from 'bcrypt';
 
 interface IUsers {
+  id: string;
   name: string;
   email: string;
   username: string;
   password: string;
+  friends_ids: string[];
 }
 
 interface ErrorInterface {
@@ -24,22 +26,11 @@ export class UsersService {
   private users: IUsers[] = [];
 
   async create(data: IUsers): Promise<ValidationInterface | IUsers> {
-    const userValidate = new UserValidate();
-
-    userValidate.name = data.name;
-    userValidate.email = data.email;
-    userValidate.username = data.username;
-    userValidate.password = data.password;
-
-    const validated = await validation(userValidate);
-
-    if (!validated.status) {
-      return validated;
-    }
+    data.password = await hash(data.password, 8);
+    data.id = uuidv4();
 
     this.users.push(data);
 
-    delete data.password;
     return data;
   }
 
@@ -53,5 +44,41 @@ export class UsersService {
 
   findByUsername(username) {
     return this.users.find((element) => element.username === username);
+  }
+
+  setFriends(username, id) {
+    const user = this.findByUsername(username);
+
+    if (!user) {
+      throw new BadRequestException({
+        status: false,
+        errors: [
+          {
+            property: 'id',
+            description: 'Usuário não encontrado!',
+          },
+        ],
+      });
+    }
+
+    this.users.map((item) => {
+      item.friends_ids.map((friend) => {
+        if (friend === user.id) {
+          throw new BadRequestException({
+            status: false,
+            errors: [
+              {
+                property: 'id',
+                description: 'Você já tem essa pessoa adicionada!',
+              },
+            ],
+          });
+        }
+      });
+
+      if (item.id == id) {
+        item.friends_ids.push(user.id);
+      }
+    });
   }
 }
