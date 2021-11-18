@@ -1,22 +1,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { compare } from 'bcrypt';
+import { User } from '../users/schemas/user.schema';
 
-interface IUsers {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-  friends_id?: string[];
-}
+type IUser = Omit<User, 'password'>;
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
 
-  async validateUser(username: string, password: string): Promise<IUsers> {
-    const user = this.usersService.findByUsername(username);
+  async validateUser(username: string, pass: string): Promise<IUser> {
+    const user = await this.usersService.findByUsername(username);
 
     function throwError() {
       throw new BadRequestException({
@@ -30,12 +28,28 @@ export class AuthService {
       throwError();
     }
 
-    const passMatched = await compare(password, user.password);
+    const passMatched = await compare(pass, user.password);
 
     if (!passMatched) {
       throwError();
     }
 
     return user;
+  }
+
+  async login(user: any) {
+    const payload = { username: user.username, sub: user._id };
+
+    const returnUser = await this.usersService.findByUsername(user.username);
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        name: returnUser.name,
+        email: returnUser.email,
+        username: returnUser.username,
+        image: returnUser.img_url,
+      },
+    };
   }
 }

@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post, Request, Response } from '@nestjs/common';
+import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
+import { LocalAuthGuard } from './auth/guards/local-auth.guard';
+import { Public } from './utils/constants';
 
 @Controller()
 export class AppController {
@@ -14,10 +16,10 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Public()
+  @UseGuards(LocalAuthGuard)
   @Post('auth/login')
-  async login(@Request() request, @Response() response, @Body() body) {
-    await this.authService.validateUser(body.username, body.password);
-
-    response.status(200).json('Usuário logado com sucesso!');
+  async login(@Request() req) {
+    return await this.authService.login(req.user);
   }
 }

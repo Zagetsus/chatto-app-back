@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { hash } from 'bcrypt';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from './schemas/user.schema';
+import { Model } from 'mongoose';
 
 interface IUsers {
   id: string;
@@ -11,74 +13,32 @@ interface IUsers {
   friends_ids: string[];
 }
 
-interface ErrorInterface {
-  property: string;
-  description: any;
-}
-
-interface ValidationInterface {
-  status: boolean;
-  errors?: ErrorInterface[];
-}
-
 @Injectable()
 export class UsersService {
-  private users: IUsers[] = [];
+  constructor(
+    @InjectModel('User')
+    private userModel: Model<UserDocument>,
+  ) {}
 
-  async create(data: IUsers): Promise<ValidationInterface | IUsers> {
+  async create(data: IUsers): Promise<User> {
     data.password = await hash(data.password, 8);
-    data.id = uuidv4();
 
-    this.users.push(data);
+    const createdUser = new this.userModel(data);
+    const saveUser = await createdUser.save();
 
-    return data;
+    delete saveUser.password;
+    return saveUser;
   }
 
-  getUsers() {
-    return this.users;
+  async getUsers(): Promise<User[]> {
+    return await this.userModel.find().exec();
   }
 
-  findByEmail(email) {
-    return this.users.find((element) => element.email === email);
+  async findByEmail(email): Promise<User> {
+    return await this.userModel.findOne({ email: email }).exec();
   }
 
-  findByUsername(username) {
-    return this.users.find((element) => element.username === username);
-  }
-
-  setFriends(username, id) {
-    const user = this.findByUsername(username);
-
-    if (!user) {
-      throw new BadRequestException({
-        status: false,
-        errors: [
-          {
-            property: 'id',
-            description: 'Usuário não encontrado!',
-          },
-        ],
-      });
-    }
-
-    this.users.map((item) => {
-      item.friends_ids.map((friend) => {
-        if (friend === user.id) {
-          throw new BadRequestException({
-            status: false,
-            errors: [
-              {
-                property: 'id',
-                description: 'Você já tem essa pessoa adicionada!',
-              },
-            ],
-          });
-        }
-      });
-
-      if (item.id == id) {
-        item.friends_ids.push(user.id);
-      }
-    });
+  async findByUsername(username): Promise<User> {
+    return await this.userModel.findOne({ username: username }).exec();
   }
 }

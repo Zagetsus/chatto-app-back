@@ -15,8 +15,8 @@ export class UsersController {
 
   @Post()
   async store(@Request() request, @Response() response, @Body() body) {
-    const emailExist = this.usersService.findByEmail(body.email);
-    const usernameExist = this.usersService.findByUsername(body.username);
+    const emailExist = await this.usersService.findByEmail(body.email);
+    const usernameExist = await this.usersService.findByUsername(body.username);
     const errors = [];
 
     const userValidate = new UserValidate();
