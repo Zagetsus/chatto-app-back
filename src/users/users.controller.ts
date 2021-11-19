@@ -2,6 +2,7 @@ import { Response, Request, Controller, Get, Post, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserValidate } from './user.validation';
 import { validation } from '../validation/validation';
+import { Public } from 'src/utils/constants';
 
 @Controller('users')
 export class UsersController {
@@ -13,6 +14,7 @@ export class UsersController {
     response.status(200).json(users);
   }
 
+  @Public()
   @Post()
   async store(@Request() request, @Response() response, @Body() body) {
     const emailExist = await this.usersService.findByEmail(body.email);
