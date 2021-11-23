@@ -18,6 +18,9 @@ export class User {
   password: string;
 
   @Prop()
+  phone: number;
+
+  @Prop()
   img_url: string;
 
   @Prop()

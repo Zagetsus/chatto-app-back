@@ -1,4 +1,4 @@
-import { Response, Request, Controller, Get, Post, Body } from '@nestjs/common';
+import { Response, Request, Controller, Get, Post, Body, Param } from "@nestjs/common";
 import { UsersService } from './users.service';
 import { UserValidate } from './user.validation';
 import { validation } from '../validation/validation';
@@ -12,6 +12,25 @@ export class UsersController {
   async index(@Request() request, @Response() response) {
     const users = this.usersService.getUsers();
     response.status(200).json(users);
+  }
+
+  @Get(':username')
+  async show(@Request() request, @Response() response, @Param() params) {
+    const users = await this.usersService.findByUsername(params.username);
+
+    if(!users){
+      response.status(400).json({ message: 'Esse usuário não existe' });
+    }
+
+    response.status(200).json({
+      name: users.name,
+      username: users.username,
+      email: users.email,
+      phone: users.phone,
+      img_url: users.img_url,
+      status: users.status,
+      created_at: users.created_at,
+    });
   }
 
   @Public()

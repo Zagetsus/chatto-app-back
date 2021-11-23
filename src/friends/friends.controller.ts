@@ -12,6 +12,8 @@ export class FriendsController {
 
   @Get()
   async index(@Request() request, @Response() response) {
+    const { username } = request.user;
+
     const friends = await this.userModel.aggregate([
       {
         $lookup: {
@@ -22,7 +24,7 @@ export class FriendsController {
         },
       },
       {
-        $match: { username: 'wolf' },
+        $match: { username: username },
       },
       {
         $unwind: '$friend',
@@ -31,13 +33,15 @@ export class FriendsController {
         $project: {
           _id: 0,
           name: '$friend.name',
+          username: '$friend.username',
           email: '$friend.email',
           img: '$friend.img_url',
+          status: '$friend.status',
         },
       },
     ]);
 
-    return response.status(201).json(friends);
+    return response.status(200).json(friends);
   }
 
   @Post()
